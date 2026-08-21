@@ -1,14 +1,14 @@
 # Sand Game
 
-A falling-sand puzzle game where polyomino blocks shatter into colored particles.Connect same-color paths from the left wall to the right wall to clear them and chain high scores.Open `index.html` in any modern browser to play.---
+A falling-sand puzzle game where polyomino blocks shatter into colored particles. Connect same-color paths from the left wall to the right wall to clear them and chain high scores.
 
 ## How to Play
 
-1.Drag a piece from the bottom tray onto the board.2.The piece drops as a solid block, then breaks into individual sand particles.3.Sand falls and slides under gravity.4.When a continuous path of the **same color** reaches from the left edge to the right edge, that path clears.5.Chain clears to build a streak multiplier.6.Game ends when none of the three tray pieces can be placed.---
+1. Drag a piece from the bottom tray onto the board. 2. The piece drops as a solid block, then breaks into individual sand particles. 3. Sand falls and slides under gravity. 4. When a continuous path of the **same color** reaches from the left edge to the right edge, that path clears. 5. Chain clears to build a streak multiplier. 6. Game ends when none of the three tray pieces can be placed.
 
 ## Physics
 
-The board is a grid of `W × H` cells (`60 × 90`).Each polyomino is built from `MACRO × MACRO` (5×5) solid blocks that later become individual particles.### Falling blocks
+The board is a grid of `W × H` cells (`60 × 90`). Each polyomino is built from `MACRO × MACRO` (5×5) solid blocks that later become individual particles. ### Falling blocks
 Solid pieces fall one cell at a time until they hit something, then disintegrate:
 
 ```js
@@ -66,8 +66,8 @@ if (dripCounter >= 3) {
 }
 ```
 
-`scanDir` flips every frame so piles stay roughly symmetric instead of always favoring one side.### Path clearing
-A flood-fill starts from every particle on the left wall.8-way connectivity is used.If the component reaches the right wall, the whole path is marked for clearing:
+`scanDir` flips every frame so piles stay roughly symmetric instead of always favoring one side. ### Path clearing
+A flood-fill starts from every particle on the left wall.8-way connectivity is used. If the component reaches the right wall, the whole path is marked for clearing:
 
 ```js
 // 8 way connectivity feels better than 4
@@ -86,7 +86,7 @@ for (let dx = -1; dx <= 1; dx++) {
 }
 ```
 
-Cleared particles flash, spawn particle FX, and award `paths × 150 × streak` points.---
+Cleared particles flash, spawn particle FX, and award `paths × 150 × streak` points.
 
 ## Features
 
