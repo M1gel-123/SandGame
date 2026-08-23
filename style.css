@@ -16,7 +16,6 @@ body {
     align-items: center;
 }
 
-/* bg stuff */
 #bg-canvas {
     position: fixed;
     inset: 0;
@@ -104,25 +103,11 @@ h1 {
 }
 
 @keyframes boardShake {
-    0% {
-        transform: translate(0);
-    }
-
-    25% {
-        transform: translate(-7px, 3px);
-    }
-
-    50% {
-        transform: translate(6px, -4px);
-    }
-
-    75% {
-        transform: translate(-3px, 2px);
-    }
-
-    100% {
-        transform: translate(0);
-    }
+    0% { transform: translate(0); }
+    25% { transform: translate(-7px, 3px); }
+    50% { transform: translate(6px, -4px); }
+    75% { transform: translate(-3px, 2px); }
+    100% { transform: translate(0); }
 }
 
 #tray {
@@ -252,42 +237,13 @@ h1 {
 }
 
 @media (max-width: 500px) {
-    body {
-        padding: 9px;
-    }
-
-    h1 {
-        font-size: 1.7rem;
-        margin-bottom: 9px;
-    }
-
-    .stat-box {
-        padding: 6px;
-    }
-
-    .stat-label {
-        font-size: 9px;
-    }
-
-    .stat-val {
-        font-size: 15px;
-    }
-
-    .intro-title {
-        font-size: 3rem;
-        letter-spacing: 4px;
-    }
-
-    #btn-start {
-        font-size: 1.3rem;
-        padding: 12px 30px;
-    }
-
-    #board {
-        max-height: 58vh;
-    }
-
-    #tray {
-        gap: 8px;
-    }
+    body { padding: 9px; }
+    h1 { font-size: 1.7rem; margin-bottom: 9px; }
+    .stat-box { padding: 6px; }
+    .stat-label { font-size: 9px; }
+    .stat-val { font-size: 15px; }
+    .intro-title { font-size: 3rem; letter-spacing: 4px; }
+    #btn-start { font-size: 1.3rem; padding: 12px 30px; }
+    #board { max-height: 58vh; }
+    #tray { gap: 8px; }
 }
