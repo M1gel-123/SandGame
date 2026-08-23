@@ -1,18 +1,16 @@
 const SIZE = 6;
-const MACRO = 5; 
+const MACRO = 5;
 const W = 360 / SIZE;
 const H = 540 / SIZE;
 
-// colors are just hsl, id is used for matching when clearing
 const COLORS = [
-    { id: 1, h: 45, s: 90, l: 55 },  // yellow
-    { id: 2, h: 0, s: 80, l: 55 },   // red
-    { id: 3, h: 120, s: 70, l: 45 }, // green
-    { id: 4, h: 210, s: 90, l: 60 }, // blue
-    { id: 5, h: 280, s: 70, l: 60 }  // purple
+    { id: 1, h: 45, s: 90, l: 55 },
+    { id: 2, h: 0, s: 80, l: 55 },
+    { id: 3, h: 120, s: 70, l: 45 },
+    { id: 4, h: 210, s: 90, l: 60 },
+    { id: 5, h: 280, s: 70, l: 60 }
 ];
 
-// bunch of polyomino shapes
 const SHAPES = [
     [[1,1,1],[0,1,0]],
     [[1,1],[1,1]],
@@ -27,12 +25,12 @@ const SHAPES = [
     [[1,0,1],[1,1,1]],
     [[1,1,1,1,1]],
     [[1],[1],[1],[1],[1]],
-    [[1,1,1],[1,1,1],[1,1,1]] 
+    [[1,1,1],[1,1,1],[1,1,1]]
 ];
 
 const bg = document.getElementById('bg-canvas');
 const bgCtx = bg.getContext('2d');
-let bgParts = [];
+let bgP = [];
 let bgOn = false;
 
 function resizeBg() {
@@ -42,7 +40,7 @@ function resizeBg() {
 window.addEventListener('resize', resizeBg);
 resizeBg();
 
-function makeBgPart() {
+function makePart() {
     const c = COLORS[Math.floor(Math.random() * COLORS.length)];
     return {
         x: Math.random() * bg.width,
@@ -51,19 +49,19 @@ function makeBgPart() {
         speed: 0.6 + Math.random() * 1.8,
         drift: (Math.random() - 0.5) * 0.6,
         color: `hsla(${c.h}, ${c.s}%, ${c.l}%, ${0.25 + Math.random() * 0.45})`,
-        wobble: Math.random() * Math.PI * 2,
-        wobbleSpeed: 0.02 + Math.random() * 0.04
+        wob: Math.random() * Math.PI * 2,
+        wobSpd: 0.02 + Math.random() * 0.04
     };
 }
 
 function startBg() {
     if (bgOn) return;
     bgOn = true;
-    bgParts = [];
+    bgP = [];
     for (let i = 0; i < 70; i++) {
-        const p = makeBgPart();
+        const p = makePart();
         p.y = Math.random() * bg.height;
-        bgParts.push(p);
+        bgP.push(p);
     }
     bg.classList.add('active');
 }
@@ -71,12 +69,11 @@ function startBg() {
 function drawBg() {
     if (!bgOn) return;
     bgCtx.clearRect(0, 0, bg.width, bg.height);
-    // slight trail so it doesnt look too clean
     bgCtx.fillStyle = 'rgba(20,20,20,0.15)';
     bgCtx.fillRect(0, 0, bg.width, bg.height);
-    for (const p of bgParts) {
-        p.wobble += p.wobbleSpeed;
-        p.x += p.drift + Math.sin(p.wobble) * 0.3;
+    for (const p of bgP) {
+        p.wob += p.wobSpd;
+        p.x += p.drift + Math.sin(p.wob) * 0.3;
         p.y += p.speed;
         if (p.y > bg.height + 10) {
             p.y = -10 - Math.random() * 40;
@@ -89,9 +86,8 @@ function drawBg() {
     }
 }
 
-// main game
 let grid = Array.from({ length: W }, () => Array(H).fill(null));
-let particles = []; // the flying fx bits
+let fx = [];
 let floaters = [];
 let tray = [null, null, null];
 let score = 0;
@@ -100,23 +96,23 @@ let best = 0;
 let justCleared = false;
 let needsSettle = false;
 let lastDrip = 0;
-let dripCounter = 0;
+let dripCnt = 0;
 let gameOver = false;
-let needPathCheck = false;
+let needPath = false;
 let wasMoving = false;
 let dragging = false;
 let dragIdx = -1;
 let dragBlock = null;
-let previewX = null;
-let previewY = null;
-let previewOk = false;
-let mouseX = 0;
-let mouseY = 0;
+let prevX = null;
+let prevY = null;
+let prevOk = false;
+let mx = 0;
+let my = 0;
 let anim = null;
 let clearData = null;
 let clearSet = new Set();
-let fallingBlocks = [];
-let scanDir = 1; // flip every frame so sand doesnt bias left/right
+let falling = [];
+let scanDir = 1;
 
 const board = document.getElementById('board');
 const ctx = board.getContext('2d');
@@ -144,7 +140,6 @@ startBtn.onclick = () => {
     startBg();
 };
 
-// click anywhere on the dark overlay also starts
 overlay.onclick = e => {
     if (e.target === overlay || (e.target.closest('#intro-overlay') && !e.target.closest('#btn-start'))) {
         startBtn.click();
@@ -167,14 +162,13 @@ function initAudio() {
     if (audioCtx.state === 'suspended') audioCtx.resume();
 }
 
-// browsers are weird about autoplay so wait for first interaction
 window.addEventListener('mousedown', initAudio, { once: true });
 window.addEventListener('touchstart', initAudio, { once: true });
 
 function dripSound() {
     if (!audioCtx) return;
     const now = performance.now();
-    if (now - lastDrip < 60) return; // dont spam
+    if (now - lastDrip < 60) return;
     lastDrip = now;
     const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.06, audioCtx.sampleRate);
     const data = buf.getChannelData(0);
@@ -196,8 +190,7 @@ function dripSound() {
 
 function clearSound(level) {
     if (!audioCtx) return;
-    // rough major scale, higher streak = higher notes
-const base = 300;
+    const base = 300;
     const scale = [0, 3, 5, 7, 10, 12, 15, 17];
     const note = Math.min(level - 1, scale.length - 1);
     const pitch = base * Math.pow(2, scale[note] / 12);
@@ -248,8 +241,7 @@ Block.prototype.hits = function(gx, gy) {
             }
         }
     }
-    //  check against other falling blocks so they dont phase through each other
-    for (const other of fallingBlocks) {
+    for (const other of falling) {
         if (other === this || !other.falling) continue;
         for (let r = 0; r < this.shape.length; r++) {
             for (let c = 0; c < this.shape[0].length; c++) {
@@ -288,7 +280,6 @@ Block.prototype.fall = function() {
 };
 
 Block.prototype.breakApart = function() {
-    // turn the whole shape into individual sand particles
     for (let r = 0; r < this.shape.length; r++) {
         for (let c = 0; c < this.shape[0].length; c++) {
             if (!this.shape[r][c]) continue;
@@ -342,16 +333,16 @@ function drawTray(canvas, b) {
 function updateBlocks() {
     let moved = false;
     let landed = false;
-    for (let i = fallingBlocks.length - 1; i >= 0; i--) {
-        const b = fallingBlocks[i];
+    for (let i = falling.length - 1; i >= 0; i--) {
+        const b = falling[i];
         if (!b.falling) continue;
         if (b.fall()) {
             moved = true;
         } else {
             b.breakApart();
-            fallingBlocks.splice(i, 1);
+            falling.splice(i, 1);
             landed = true;
-            needPathCheck = true;
+            needPath = true;
             justCleared = false;
             needsSettle = true;
         }
@@ -362,13 +353,12 @@ function updateBlocks() {
 function updateSand() {
     let moved = false;
     let dripped = false;
-    scanDir *= -1; // alternate direction so piles stay roughly symmetric
+    scanDir *= -1;
 
-    // first just let everything fall straight down (2x speed)
     for (let step = 0; step < 2; step++) {
         for (let y = H - 2; y >= 0; y--) {
             for (let i = 0; i < W; i++) {
-                const x = scanDir === 1 ?i : W - 1 - i;
+                const x = scanDir === 1 ? i : W - 1 - i;
                 const p = grid[x][y];
                 if (p && p.isParticle && !grid[x][y + 1]) {
                     grid[x][y + 1] = p;
@@ -379,20 +369,18 @@ function updateSand() {
         }
     }
 
-    // every few frames try to slide sideways if blocked
-    dripCounter++;
-    if (dripCounter >= 3) {
-        dripCounter = 0;
+    dripCnt++;
+    if (dripCnt >= 3) {
+        dripCnt = 0;
         for (let y = H - 2; y >= 0; y--) {
             for (let i = 0; i < W; i++) {
-                const x = scanDir === 1 ?i : W - 1 - i;
+                const x = scanDir === 1 ? i : W - 1 - i;
                 const p = grid[x][y];
                 if (!p || !p.isParticle) continue;
                 if (y + 1 >= H || grid[x][y + 1]) {
                     let left = x > 0 && y + 1 < H && !grid[x - 1][y + 1];
                     let right = x < W - 1 && y + 1 < H && !grid[x + 1][y + 1];
                     if (left && right) {
-                        // random pick so it doesnt always prefer one side
                         if (Math.random() > 0.5) left = false;
                         else right = false;
                     }
@@ -416,7 +404,6 @@ function updateSand() {
     return moved;
 }
 
-// flood fill from the left wall looking for same color paths that reach the right
 function checkPaths() {
     if (clearData) return 0;
     const visited = Array.from({ length: W }, () => Array(H).fill(false));
@@ -435,7 +422,6 @@ function checkPaths() {
             const cur = queue[head++];
             component.push(cur);
             if (cur.x === W - 1) reachedRight = true;
-            // 8 way connectivity feels better than 4
             for (let dx = -1; dx <= 1; dx++) {
                 for (let dy = -1; dy <= 1; dy++) {
                     if (!dx && !dy) continue;
@@ -464,8 +450,8 @@ function checkPaths() {
 }
 
 function spawnFx(gx, gy, color) {
-    if (Math.random() > 0.4) return; // dont spawn too many
-    particles.push({
+    if (Math.random() > 0.4) return;
+    fx.push({
         x: gx * SIZE,
         y: gy * SIZE,
         vx: (Math.random() - 0.5) * 10,
@@ -480,13 +466,13 @@ function addFloater(text, x, y) {
 }
 
 function updateFx() {
-    for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
+    for (let i = fx.length - 1; i >= 0; i--) {
+        const p = fx[i];
         p.x += p.vx;
         p.y += p.vy;
         p.vy += 0.5;
         p.life -= 0.04;
-        if (p.life <= 0) particles.splice(i, 1);
+        if (p.life <= 0) fx.splice(i, 1);
     }
     for (let i = floaters.length - 1; i >= 0; i--) {
         const f = floaters[i];
@@ -506,8 +492,7 @@ function canPlace(shape, mx, my) {
                     const ty = my * MACRO + r * MACRO + mr;
                     if (tx < 0 || tx >= W || ty < 0 || ty >= H) return false;
                     if (grid[tx][ty]) return false;
-                    // also dont place on top of currently falling blocks
-                     for (const b of fallingBlocks) {
+                    for (const b of falling) {
                         for (let r2 = 0; r2 < b.shape.length; r2++) {
                             for (let c2 = 0; c2 < b.shape[0].length; c2++) {
                                 if (!b.shape[r2][c2]) continue;
@@ -519,7 +504,7 @@ function canPlace(shape, mx, my) {
                                 }
                             }
                         }
-}
+                    }
                 }
             }
         }
@@ -540,10 +525,10 @@ function startDrag(e, i) {
 }
 
 function moveDrag(e) {
-    mouseX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
-    mouseY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
-    dragC.style.left = mouseX + 'px';
-    dragC.style.top = mouseY + 'px';
+    mx = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+    my = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+    dragC.style.left = mx + 'px';
+    dragC.style.top = my + 'px';
 }
 
 function onMove(e) {
@@ -551,8 +536,8 @@ function onMove(e) {
     e.preventDefault();
     moveDrag(e);
     const rect = board.getBoundingClientRect();
-    let px = (mouseX - rect.left) * (board.width / rect.width);
-    let py = (mouseY - rect.top) * (board.height / rect.height);
+    let px = (mx - rect.left) * (board.width / rect.width);
+    let py = (my - rect.top) * (board.height / rect.height);
     px = Math.max(0, Math.min(px, board.width));
     py = Math.max(0, Math.min(py, board.height));
 
@@ -562,7 +547,6 @@ function onMove(e) {
     tx = Math.max(0, Math.min(tx, W / MACRO - shape[0].length));
     ty = Math.max(0, Math.min(ty, H / MACRO - shape.length));
 
-    // drop as low as possible from the mouse position
     let goodY = -1;
     for (let y = ty; y >= 0; y--) {
         if (canPlace(shape, tx, y)) {
@@ -572,13 +556,13 @@ function onMove(e) {
     }
 
     if (goodY !== -1) {
-        previewX = tx * MACRO;
-        previewY = goodY * MACRO;
-        previewOk = true;
+        prevX = tx * MACRO;
+        prevY = goodY * MACRO;
+        prevOk = true;
     } else {
-        previewX = null;
-        previewY = null;
-        previewOk = false;
+        prevX = null;
+        prevY = null;
+        prevOk = false;
     }
 }
 
@@ -586,13 +570,13 @@ function endDrag() {
     if (!dragging) return;
     dragging = false;
     dragC.style.display = 'none';
-    if (previewOk && previewX !== null && !showingIntro) {
+    if (prevOk && prevX !== null && !showingIntro) {
         startAnim();
     } else {
         trays[dragIdx].style.opacity = '1';
     }
-    previewX = null;
-    previewY = null;
+    prevX = null;
+    prevY = null;
 }
 
 trays.forEach((c, i) => {
@@ -606,8 +590,8 @@ window.addEventListener('touchend', endDrag);
 
 function startAnim() {
     const rect = board.getBoundingClientRect();
-    let px = (mouseX - rect.left) * (board.width / rect.width);
-    let py = (mouseY - rect.top) * (board.height / rect.height);
+    let px = (mx - rect.left) * (board.width / rect.width);
+    let py = (my - rect.top) * (board.height / rect.height);
     const sw = dragBlock.shape[0].length * MACRO * SIZE;
     const sh = dragBlock.shape.length * MACRO * SIZE;
     anim = {
@@ -617,10 +601,10 @@ function startAnim() {
         sy: py - sh / 2,
         x: px - sw / 2,
         y: py - sh / 2,
-        tx: previewX * SIZE,
-        ty: previewY * SIZE,
-        gx: previewX,
-        gy: previewY,
+        tx: prevX * SIZE,
+        ty: prevY * SIZE,
+        gx: prevX,
+        gy: prevY,
         t: 0,
         idx: dragIdx,
         isBot: false,
@@ -631,7 +615,6 @@ function startAnim() {
     drawTray(trays[dragIdx], null);
 }
 
-// the little auto-player for the intro screen
 function botPlace() {
     if (!showingIntro || gameOver || anim || clearData) return false;
     let idx = -1;
@@ -657,7 +640,6 @@ function botPlace() {
     const maxX = Math.floor(W / MACRO) - shape[0].length;
     const maxY = Math.floor(H / MACRO) - shape.length;
 
-    // just random spots
     for (let n = 0; n < 60; n++) {
         const mx = Math.floor(Math.random() * (maxX + 1));
         const my = Math.floor(Math.random() * (maxY + 1));
@@ -690,7 +672,7 @@ function botPlace() {
 }
 
 function commitBlock() {
-    fallingBlocks.push(new Block(anim.color, anim.shape, anim.gx, anim.gy));
+    falling.push(new Block(anim.color, anim.shape, anim.gx, anim.gy));
     if (!anim.isBot) {
         score += 15;
         updateUI();
@@ -732,7 +714,6 @@ function shapeFitsSomewhere(shape) {
 
 function triggerGameOver() {
     gameOver = true;
-    // gray out
     for (let x = 0; x < W; x++) {
         for (let y = 0; y < H; y++) {
             if (grid[x][y] && grid[x][y].isParticle) grid[x][y].color = '#444';
@@ -749,7 +730,7 @@ function triggerGameOver() {
         bi.textContent = 'You beat your previous best!';
     } else {
         nb.style.display = 'none';
-        bi.textContent = best > 0 ?'Best: ' + best : '';
+        bi.textContent = best > 0 ? 'Best: ' + best : '';
     }
     const go = document.getElementById('game-over');
     go.style.display = 'block';
@@ -766,7 +747,7 @@ function checkGameOver() {
 
 function resetGame() {
     grid = Array.from({ length: W }, () => Array(H).fill(null));
-    fallingBlocks = [];
+    falling = [];
     score = 0;
     streak = 1;
     gameOver = false;
@@ -774,7 +755,7 @@ function resetGame() {
     clearData = null;
     clearSet.clear();
     wasMoving = false;
-    needPathCheck = false;
+    needPath = false;
     needsSettle = false;
     updateUI();
     const go = document.getElementById('game-over');
@@ -793,7 +774,6 @@ function resetGame() {
 function draw() {
     ctx.clearRect(0, 0, board.width, board.height);
 
-    // faint grid so you can see the cells
     ctx.strokeStyle = '#222';
     ctx.lineWidth = 1;
     for (let x = 0; x <= W; x += MACRO) {
@@ -809,14 +789,12 @@ function draw() {
         ctx.stroke();
     }
 
-    // sand
     for (let x = 0; x < W; x++) {
         for (let y = 0; y < H; y++) {
             const cell = grid[x][y];
             if (!cell || !cell.isParticle) continue;
             if (clearData && clearSet.has(x + ',' + y)) {
-                // flash white/yellow while clearing
-                ctx.fillStyle = (Math.floor(clearData.timer / 2) % 2 === 0) ?'#fff' : '#eab308';
+                ctx.fillStyle = (Math.floor(clearData.timer / 2) % 2 === 0) ? '#fff' : '#eab308';
             } else {
                 ctx.fillStyle = cell.color;
             }
@@ -824,8 +802,7 @@ function draw() {
         }
     }
 
-    // still falling solid blocks
-    for (const b of fallingBlocks) {
+    for (const b of falling) {
         const cs = MACRO * SIZE;
         ctx.fillStyle = `hsl(${b.color.h}, ${b.color.s}%, ${b.color.l}%)`;
         ctx.strokeStyle = '#000';
@@ -841,15 +818,14 @@ function draw() {
         }
     }
 
-    // placement preview
-    if (dragging && previewOk && previewX !== null && !showingIntro) {
+    if (dragging && prevOk && prevX !== null && !showingIntro) {
         const shape = dragBlock.shape;
         const cs = MACRO * SIZE;
         for (let r = 0; r < shape.length; r++) {
             for (let c = 0; c < shape[0].length; c++) {
                 if (!shape[r][c]) continue;
-                const px = (previewX + c * MACRO) * SIZE;
-                const py = (previewY + r * MACRO) * SIZE;
+                const px = (prevX + c * MACRO) * SIZE;
+                const py = (prevY + r * MACRO) * SIZE;
                 ctx.fillStyle = `hsl(${dragBlock.color.h}, ${dragBlock.color.s}%, ${dragBlock.color.l}%)`;
                 ctx.globalAlpha = 0.45;
                 ctx.fillRect(px, py, cs, cs);
@@ -862,7 +838,6 @@ function draw() {
         ctx.globalAlpha = 1;
     }
 
-    // the flying animation
     if (anim) {
         const shape = anim.shape;
         const cs = MACRO * SIZE;
@@ -882,7 +857,7 @@ function draw() {
         ctx.globalAlpha = 1;
     }
 
-    for (const p of particles) {
+    for (const p of fx) {
         ctx.globalAlpha = p.life;
         ctx.fillStyle = p.color;
         ctx.fillRect(p.x, p.y, SIZE, SIZE);
@@ -904,7 +879,6 @@ function draw() {
 function loop() {
     requestAnimationFrame(loop);
 
-    // intro random blocks
     if (showingIntro && !gameOver) {
         botTimer += 16;
         if (botTimer >= 420) {
@@ -919,7 +893,7 @@ function loop() {
     }
 
     if (anim) {
-        const spd = anim.isBot ?anim.spd : 0.15;
+        const spd = anim.isBot ? anim.spd : 0.15;
         anim.t += spd;
         anim.x += (anim.tx - anim.x) * Math.min(0.4, spd * 2.2);
         anim.y += (anim.ty - anim.y) * Math.min(0.4, spd * 2.2);
@@ -957,12 +931,11 @@ function loop() {
         const sandMoved = updateSand();
         if (blocksMoved || sandMoved) {
             wasMoving = true;
-        } else if (wasMoving || needPathCheck) {
+        } else if (wasMoving || needPath) {
             wasMoving = false;
-            needPathCheck = false;
+            needPath = false;
             const paths = checkPaths();
             if (paths === 0 && needsSettle && !anim) {
-                // no clear happened after things settled, reset streak
                 if (!justCleared) streak = 1;
                 else streak++;
                 updateUI();
