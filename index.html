@@ -9,52 +9,52 @@
 <body>
 <!-- sand falling puzzle thing i've been working on -->
 
-    <canvas id="bg-canvas"></canvas>
+<canvas id="bg-canvas"></canvas>
 
-    <div class="header">
-        <h1>Sand Game</h1>
-        <div id="ui-bar">
-            <div class="stat-box">
-                <div class="stat-label">SCORE</div>
-                <div id="score" class="stat-val">0</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">STREAK</div>
-                <div id="streak" class="stat-val">x1</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">BEST</div>
-                <div id="best" class="stat-val">0</div>
-            </div>
+<div class="header">
+    <h1>Sand Game</h1>
+    <div id="ui-bar">
+        <div class="stat-box">
+            <div class="stat-label">SCORE</div>
+            <div id="score" class="stat-val">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">STREAK</div>
+            <div id="streak" class="stat-val">x1</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">BEST</div>
+            <div id="best" class="stat-val">0</div>
         </div>
     </div>
+</div>
 
-    <div class="game-container">
-        <canvas id="board" width="360" height="540"></canvas>
-    </div>
+<div class="game-container">
+    <canvas id="board" width="360" height="540"></canvas>
+</div>
 
-    <div id="tray">
-        <canvas id="tray-0" class="tray-slot" width="120" height="120"></canvas>
-        <canvas id="tray-1" class="tray-slot" width="120" height="120"></canvas>
-        <canvas id="tray-2" class="tray-slot" width="120" height="120"></canvas>
-    </div>
+<div id="tray">
+    <canvas id="tray-0" class="tray-slot" width="120" height="120"></canvas>
+    <canvas id="tray-1" class="tray-slot" width="120" height="120"></canvas>
+    <canvas id="tray-2" class="tray-slot" width="120" height="120"></canvas>
+</div>
 
-    <canvas id="drag-canvas" width="140" height="140"></canvas>
+<canvas id="drag-canvas" width="140" height="140"></canvas>
 
-    <div id="game-over">
-        <h2>GAME OVER</h2>
-        <p style="color:#aaa; margin: 0;">Final Score</p>
-        <div id="final-score" style="font-size: 2.5rem; font-weight: bold; color: #fff; margin-top: 5px;">0</div>
-        <div id="new-best" style="display:none; color:#eab308; font-weight:bold; font-size:1.2rem; margin-top:8px;">NEW BEST SCORE!</div>
-        <p id="best-info" style="color:#888; margin: 10px 0 0 0; font-size:0.9rem;"></p>
-        <button id="btn-restart" onclick="resetGame()">PLAY AGAIN</button>
-    </div>
+<div id="game-over">
+    <h2>GAME OVER</h2>
+    <p style="color:#aaa; margin: 0;">Final Score</p>
+    <div id="final-score" style="font-size: 2.5rem; font-weight: bold; color: #fff; margin-top: 5px;">0</div>
+    <div id="new-best" style="display:none; color:#eab308; font-weight:bold; font-size:1.2rem; margin-top:8px;">NEW BEST SCORE!</div>
+    <p id="best-info" style="color:#888; margin: 10px 0 0 0; font-size:0.9rem;"></p>
+    <button id="btn-restart" onclick="resetGame()">PLAY AGAIN</button>
+</div>
 
-    <div id="intro-overlay">
-        <div class="intro-title">Sand Game</div>
-        <button id="btn-start">START</button>
-    </div>
+<div id="intro-overlay">
+    <div class="intro-title">Sand Game</div>
+    <button id="btn-start">START</button>
+</div>
 
-    <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
