@@ -123,8 +123,13 @@ const trays = [
 ];
 const dragC = document.getElementById('drag-canvas');
 
-let audioCtx = null;
-let masterGain = null;
+// just using normal audio files cuz web audio is annoying
+const sandSfx = new Audio('sand.wav');
+sandSfx.loop = true;
+sandSfx.volume = 0.4;
+const lineSfx = new Audio('line.wav');
+lineSfx.volume = 0.6;
+
 let showingIntro = true;
 let botTimer = 0;
 
@@ -136,8 +141,9 @@ startBtn.onclick = () => {
     showingIntro = false;
     overlay.classList.add('hidden');
     resetGame();
-    initAudio();
     startBg();
+    // unlock audio
+    sandSfx.play().then(() => sandSfx.pause()).catch(() => {});
 };
 
 overlay.onclick = e => {
@@ -146,66 +152,19 @@ overlay.onclick = e => {
     }
 };
 
-function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const comp = audioCtx.createDynamicsCompressor();
-        comp.threshold.value = -10;
-        comp.knee.value = 10;
-        comp.ratio.value = 12;
-        comp.attack.value = 0;
-        comp.release.value = 0.25;
-        comp.connect(audioCtx.destination);
-        masterGain = audioCtx.createGain();
-        masterGain.connect(comp);
-    }
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-}
-
-window.addEventListener('mousedown', initAudio, { once: true });
-window.addEventListener('touchstart', initAudio, { once: true });
-
 function dripSound() {
-    if (!audioCtx) return;
     const now = performance.now();
-    if (now - lastDrip < 60) return;
+    if (now - lastDrip < 80) return;
     lastDrip = now;
-    const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.06, audioCtx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-    const src = audioCtx.createBufferSource();
-    src.buffer = buf;
-    const f = audioCtx.createBiquadFilter();
-    f.type = 'bandpass';
-    f.frequency.value = 600 + Math.random() * 400;
-    f.Q.value = 2;
-    const g = audioCtx.createGain();
-    g.gain.setValueAtTime(0.2, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.06);
-    src.connect(f);
-    f.connect(g);
-    g.connect(masterGain);
-    src.start();
+    if (sandSfx.paused) {
+        sandSfx.currentTime = 0;
+        sandSfx.play().catch(() => {});
+    }
 }
 
-function clearSound(level) {
-    if (!audioCtx) return;
-    const base = 300;
-    const scale = [0, 3, 5, 7, 10, 12, 15, 17];
-    const note = Math.min(level - 1, scale.length - 1);
-    const pitch = base * Math.pow(2, scale[note] / 12);
-    [pitch, pitch * 1.5].forEach((f, i) => {
-        const osc = audioCtx.createOscillator();
-        osc.type = 'sawtooth';
-        osc.frequency.value = f;
-        const g = audioCtx.createGain();
-        g.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4 + i * 0.1);
-        osc.connect(g);
-        g.connect(masterGain);
-        osc.start(audioCtx.currentTime + i * 0.05);
-        osc.stop(audioCtx.currentTime + 0.6);
-    });
+function clearSound() {
+    lineSfx.currentTime = 0;
+    lineSfx.play().catch(() => {});
 }
 
 function Particle(c) {
@@ -241,6 +200,7 @@ Block.prototype.hits = function(gx, gy) {
             }
         }
     }
+    // also check other falling blocks so they dont clip
     for (const other of falling) {
         if (other === this || !other.falling) continue;
         for (let r = 0; r < this.shape.length; r++) {
@@ -514,7 +474,6 @@ function canPlace(shape, mx, my) {
 
 function startDrag(e, i) {
     if (gameOver || dragging || !tray[i] || anim || showingIntro) return;
-    initAudio();
     dragging = true;
     dragIdx = i;
     dragBlock = tray[i];
@@ -769,6 +728,10 @@ function resetGame() {
         trays[i].style.pointerEvents = 'auto';
     }
     fillTray();
+    if (!sandSfx.paused) {
+        sandSfx.pause();
+        sandSfx.currentTime = 0;
+    }
 }
 
 function draw() {
@@ -915,7 +878,7 @@ function loop() {
                 }
             }
             if (!justCleared) justCleared = true;
-            clearSound(streak);
+            clearSound();
             const pts = clearData.paths * 150 * streak;
             score += pts;
             addFloater('+' + pts, 80, 150);
@@ -934,6 +897,10 @@ function loop() {
         } else if (wasMoving || needPath) {
             wasMoving = false;
             needPath = false;
+            if (!sandSfx.paused) {
+                sandSfx.pause();
+                sandSfx.currentTime = 0;
+            }
             const paths = checkPaths();
             if (paths === 0 && needsSettle && !anim) {
                 if (!justCleared) streak = 1;
