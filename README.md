@@ -15,12 +15,6 @@ A little sand puzzle game built with JavaScript. Drag random pieces onto the boa
 - Points are awarded for each cleared path.
 - High score is saved in `localStorage`, so it persists across sessions.
 
-## Sound & Effects
-
-- Simple sounds generated with the Web Audio API:
-  - Sand falling sounds
-  - Path-clear sounds that change pitch based on your streak
-- Small particle effects appear when sand is cleared.
 
 ## Tech Stack
 
@@ -28,10 +22,11 @@ A little sand puzzle game built with JavaScript. Drag random pieces onto the boa
 - **CSS** – UI and layout
 - **JavaScript** – game logic, rendering, and everything else
 - **Canvas 2D** – rendering
-- **Web Audio API** – sound generation
 - **localStorage** – high score persistence
 
 ## Files
 - `index.html`
 - `script.js`
 - `style.css`
+- `sand.wav`
+- `line.wav`
